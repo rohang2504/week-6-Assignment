@@ -55,9 +55,9 @@
         /*-------------------------------------------------------*/
 
         // a topojson file containing population of each town in different years
-        const MA_counties = "./data/towns.topojson"
+        const MA_counties = "https://raw.githubusercontent.com/pranavv15/week-6-Activity/main/data/towns.topojson"
             // gini index per county
-        const gini_index = "./data/gini_index.csv"
+        const gini_index = "https://raw.githubusercontent.com/pranavv15/week-6-Activity/main/data/gini_index.csv"
 
 
         // open both files
@@ -107,13 +107,13 @@
                 // if the data is scaled using log scale
             let logScale = d3.scaleLog()
                 .domain(d3.extent(geojson.features, (d) => {
-                    return d['properties']['POP2010']
+                    return d['properties']['POP1980']
                 }))
 
             // if the data is scaled using linear scale
             let linearScale = d3.scaleLinear()
                 .domain(d3.extent(geojson.features, (d) => {
-                    return d['properties']['POP2010']
+                    return d['properties']['POP1980']
                 }))
 
             /*-------------------------------------------------------*/
@@ -136,14 +136,14 @@
                 .append("path")
                 .attr("d", d => geoPath_generator(d))
                 //.attr("fill", d => colorInterpolator(logScale(d['properties']['POP2010'])))
-                .attr("fill", d => colorInterpolator(linearScale(d['properties']['POP2010'])))
+                .attr("fill", d => colorInterpolator(linearScale(d['properties']['POP1980'])))
                 .on("mouseenter", (m, d) => {
                     tooltip.transition()
                         .duration(200)
                         .style("opacity", .9)
-                    tooltip.html(d['properties']['TOWN'])
-                        .style("left", m.clientX + "px")
-                        .style("top", m.clientY + "px");
+                    tooltip.html(d['properties']['POP1980'])
+                        .style("center", m.clientX + "px")
+                        .style("right", m.clientY + "px");
                 })
                 .on("mousemove", (m, d) => {
                     tooltip.style("opacity", .9)
