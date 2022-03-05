@@ -7,37 +7,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <script src="./libs/d3.js"></script>
     <script src="https://d3js.org/topojson.v1.min.js"></script>
-    <title>MA Map prac</title>
+    <title>MA Map 3</title>
     <style>
+        svg{
+            width: 1000px;
+            height: 500px;
+            background: beige;
+            align-self: center;
+            display: block;
+            border-radius: 20px;
+        }
         #tooltip {
-            position: absolute;
+            /* position: absolute; */
             opacity: 0;
-            top: 0;
-            left: 0;
+            left: 25;
             width: auto;
             padding: 10px;
             background: white;
             font-family: sans-serif;
             font-size: medium;
-            border-radius: 2px;
+            border-radius: 20px;
             line-height: 1;
         }
         
         path {
-            stroke-width: .5px;
+            stroke-width: .05px;
             stroke: black
         }
         
         path:hover {
             opacity: .6;
-            stroke: black;
-            stroke-width: 4px;
+            /* stroke: black; */
+            stroke-width: 2px;
         }
     </style>
 </head>
+    <h1 style="font-family: sans-serif;">Color by County</h1>
+    <h3 style="font-family: sans-serif;">By Rohan Gonjari</h3>
 
 <body>
-    <div id="tooltip"></div>
+    <div id="tooltip">This is a tooptip</div>
     <script>
         /*-------------------------------------------------------*/
         /*------------------- Window setting --------------------*/
@@ -55,27 +64,30 @@
         /*-------------------------------------------------------*/
 
         // a topojson file containing population of each town in different years
-        const MA_counties = "https://raw.githubusercontent.com/pranavv15/week-6-Activity/main/data/towns.topojson"
-            // gini index per county
-        // const gini_index = "https://raw.githubusercontent.com/pranavv15/week-6-Activity/main/data/gini_index.csv"
+        const MA_counties = "./data/towns.topojson"
+        const county_name = "https://raw.githubusercontent.com/deldersveld/topojson/master/countries/us-states/MA-25-massachusetts-counties.json"
 
 
         // open both files
         Promise.all([
-            d3.json(MA_counties)
+            d3.json(MA_counties),
+            d3.json(county_name)
         ]).then(data => {
             // topology data
             const topo_data = data[0];
-            // gini index data
-            // const csv_data = data[1];
+            const name_data = data[1];
+            console.log(topo_data)
+            // const county = ["Barnstable","Berkshire","Bristol","Dukes","Essex","Franklin","Hampden","Hampshire","Middlesex","Nantucket","Norfolk ","Plymouth","Suffolk ","Worcester"]
+            console.log(name_data)
+
 
             /*-------------------------------------------------------*/
             /*-----------------Topojson data handling----------------*/
             /*-------------------------------------------------------*/
             // if topojson file is imported we need to 
-            // convert topology data to geojson 
-            const geojson = topojson.feature(topo_data, topo_data.objects.ma);
-
+            // convert topology data to geojson because d3 cannot handle topojson
+            const geojson = topojson.feature(name_data, name_data.objects.cb_2015_massachusetts_county_20m);
+            // console.log(geojson)
             /*-------------------------------------------------------*/
             /*----------------------Projections----------------------*/
             /*-------------------------------------------------------*/
@@ -102,17 +114,17 @@
             /*----------------------Color Scaling--------------------*/
             /*-------------------------------------------------------*/
             ////https://observablehq.com/@d3/working-with-color
-            var colorInterpolator = d3.interpolateRgbBasis(["blue", "steelblue", "green", "purple", "red"])
+            var colorInterpolator = d3.interpolateRgbBasis(["blue", "steelblue", "green", "purple", "red", "yellow", "gray"])
                 // if the data is scaled using log scale
             let logScale = d3.scaleLog()
                 .domain(d3.extent(geojson.features, (d) => {
-                    return d['properties']['POPCH00_10']
+                    return d['properties']['COUNTYFP']
                 }))
 
             // if the data is scaled using linear scale
             let linearScale = d3.scaleLinear()
                 .domain(d3.extent(geojson.features, (d) => {
-                    return d['properties']['POPCH00_10']
+                    return d['properties']['COUNTYFP']
                 }))
 
             /*-------------------------------------------------------*/
@@ -126,23 +138,49 @@
 
             // Append a SVG element to body, then append a path for the boundaries
             let svg = d3.select("body").append("svg")
-                .attr("width", "100vw")
-                .attr("height", "100vh");
+                .attr("width", "90vw")
+                .attr("height", "70vh");
+
+
+            // switch (true){
+            //     case geojson.features['properties']['FIPS_STCO'] 
+            // }
+
+
+            svg.call(d3.zoom()
+                .extent([0,0],[500,1000])
+                .scaleExtent([1,10])
+                .on("zoom",zoomed)    
+            )
+
+            function zoomed({transform}){
+                svg.attr("transform", transform)
+
+            }
+
 
             svg.selectAll("path")
                 .data(geojson.features)
                 .enter()
                 .append("path")
                 .attr("d", d => geoPath_generator(d))
-                // .attr("fill", d => colorInterpolator(logScale(d['properties']['POPCH00_10'])))
-                .attr("fill", d => colorInterpolator(linearScale(d['properties']['POPCH00_10'])))
+                // .attr("fill", "white")
+                // .transition()
+                // .delay(function (d,i){return i*4})
+                // .duration(1300)
+                // .attr("fill", d => colorInterpolator(logScale(d['properties']['COUNTYFP'])))
+                .attr("fill", d => colorInterpolator(linearScale(d['properties']['COUNTYFP'])))
                 .on("mouseenter", (m, d) => {
                     tooltip.transition()
                         .duration(200)
-                        .style("opacity", .9)
-                    tooltip.html(d['properties']['POPCH00_10'])
-                        .style("center", m.clientX + "px")
-                        .style("right", m.clientY + "px");
+                        .style("opacity", .5)
+                    tooltip.html("<table><tbody><tr><td> County Name: " + 
+                            d['properties']['NAME'] +
+                            "</td></tr></tbody></table>" + "<table><tbody><tr><td> FIPS Code: " + 
+                            d['properties']['GEOID'] +
+                            "</td></tr></tbody></table>")
+                        .style("left", m.clientX + "px")
+                        .style("top", m.clientY + "px");
                 })
                 .on("mousemove", (m, d) => {
                     tooltip.style("opacity", .9)
@@ -150,7 +188,7 @@
                 .on("mouseout", (m, d) => {
                     tooltip.transition()
                         .duration(200)
-                        .style("opacity", 0)
+                        .style("opacity", 1)
                 })
         })
     </script>
